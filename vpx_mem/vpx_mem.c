@@ -35,8 +35,13 @@ static int check_size_argument_overflow(uint64_t nmemb, uint64_t size) {
   return 1;
 }
 
+#if defined(__CHERI_PURE_CAPABILITY__)
+static uintptr_t *get_malloc_address_location(void *const mem) {
+  return ((uintptr_t *)mem) - 1;
+#else   // !__CHERI_PURE_CAPABILITY__
 static size_t *get_malloc_address_location(void *const mem) {
   return ((size_t *)mem) - 1;
+#endif  // !__CHERI_PURE_CAPABILITY__
 }
 
 static uint64_t get_aligned_malloc_size(size_t size, size_t align) {
@@ -45,12 +50,21 @@ static uint64_t get_aligned_malloc_size(size_t size, size_t align) {
 
 static void set_actual_malloc_address(void *const mem,
                                       const void *const malloc_addr) {
+#if defined(__CHERI_PURE_CAPABILITY__)
+  uintptr_t *const malloc_addr_location = get_malloc_address_location(mem);
+  *malloc_addr_location = (uintptr_t)malloc_addr;
+#else   // !__CHERI_PURE_CAPABILITY__
   size_t *const malloc_addr_location = get_malloc_address_location(mem);
   *malloc_addr_location = (size_t)malloc_addr;
+#endif  // !__CHERI_PURE_CAPABILITY__
 }
 
 static void *get_actual_malloc_address(void *const mem) {
+#if defined(__CHERI_PURE_CAPABILITY__)
+  uintptr_t *const malloc_addr_location = get_malloc_address_location(mem);
+#else   // !__CHERI_PURE_CAPABILITY__
   size_t *const malloc_addr_location = get_malloc_address_location(mem);
+#endif  // !__CHERI_PURE_CAPABILITY__
   return (void *)(*malloc_addr_location);
 }
 
@@ -61,7 +75,11 @@ void *vpx_memalign(size_t align, size_t size) {
 
   addr = malloc((size_t)aligned_size);
   if (addr) {
+#if __has_builtin(__builtin_align_up)
+    x = __builtin_align_up((unsigned char *)addr + ADDRESS_STORAGE_SIZE, align);
+#else
     x = align_addr((unsigned char *)addr + ADDRESS_STORAGE_SIZE, align);
+#endif
     set_actual_malloc_address(x, addr);
   }
   return x;

@@ -12,7 +12,11 @@
 #define VPX_VPX_MEM_INCLUDE_VPX_MEM_INTRNL_H_
 #include "./vpx_config.h"
 
+#if defined(__CHERI_PURE_CAPABILITY__)
+#define ADDRESS_STORAGE_SIZE sizeof(uintptr_t)
+#else   // !__CHERI_PURE_CAPABILITY__
 #define ADDRESS_STORAGE_SIZE sizeof(size_t)
+#endif  // !__CHERI_PURE_CAPABILITY__
 
 #ifndef DEFAULT_ALIGNMENT
 #if defined(VXWORKS)

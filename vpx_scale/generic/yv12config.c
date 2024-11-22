@@ -25,8 +25,13 @@
 /****************************************************************************
  *
  ****************************************************************************/
+#if __has_builtin(__builtin_align_up)
+#define yv12_align_addr(addr, align) \
+  __builtin_align_up(addr, align)
+#else
 #define yv12_align_addr(addr, align) \
   (void *)(((size_t)(addr) + ((align)-1)) & (size_t) - (align))
+#endif
 
 int vp8_yv12_de_alloc_frame_buffer(YV12_BUFFER_CONFIG *ybf) {
   if (ybf) {
